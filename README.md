@@ -1,18 +1,54 @@
+[![Lua](https://img.shields.io/badge/lua-5.1%20%7C%205.2%20%7C%205.3%20%7C%205.4%20%7C%20LuaJIT-blue.svg)]()
+[![CI](https://github.com/PlumBlossomMaid/argrule/actions/workflows/ci.yml/badge.svg)](https://github.com/PlumBlossomMaid/argrule/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+[![EN](https://img.shields.io/badge/lang-EN-red.svg)](README.md)
+[![简体中文](https://img.shields.io/badge/lang-简体中文-blue.svg)](README.zh-CN.md)
+[![繁體中文](https://img.shields.io/badge/lang-繁體中文-green.svg)](README.zh-TW.md)
+
 # argrule
+
+**Lua function argument normalization, defaults, and contract validation**
 
 `argrule` is a Lua function signature layer for Lua 5.1, Lua 5.2, Lua 5.3, Lua 5.4, and LuaJIT.
 Its implementation is Lua source, while dependencies may include Lua rocks backed by C modules, such as Penlight's LuaFileSystem dependency.
 It is framework-neutral: one rule table supports positional calls and Python-like named table calls without embedding any application framework.
 
-## Scope
+---
 
-- Keep the argcheck-style rule table shape: `name`, `type`, `doc`, `default`, `defaulta`, `defaultf`, `opt`, `check`.
-- Support `f(a, b)`, `f{a = a, b = b}`, `f{a, b}`, and mixed calls like `f{x, axis = 1}`.
-- Treat first argument named `self` as class-method syntax, so `a:m{arg}` is normalized like `a.m{self = a, arg}`.
-- Reject trailing options-table APIs such as `f(x, {axis = 1})`; the correct form is `f{x, axis = 1}`.
-- Treat `type` as a callable contract: builtins, `alias{...}`, `Union{...}`, `Optional{...}`, `List{...}`, `Tuple{...}`, `Dict{...}`, `Literal{...}`, `Callable`, predicates, or callable type objects.
-- Keep framework names out of this repository; applications define local contracts from their own classes or predicates.
-- Track upstream argcheck feature differences in `docs/argcheck-comparison.md`.
+## Why argrule?
+
+Lua APIs often need to support compact positional calls, readable named calls, defaults, and custom type checks at the same time. `argrule` keeps that logic close to the function definition, so library code can accept multiple call styles without hand-written argument parsing in every function.
+
+---
+
+## Features
+
+| Category | Coverage |
+|----------|----------|
+| **Call forms** | `f(a, b)`, `f{a = a, b = b}`, `f{a, b}`, `f{x, axis = 1}` |
+| **Rule fields** | `name`, `type`, `doc`, `help`, `default`, `defaulta`, `defaultf`, `opt`, `check`, `call` |
+| **Contracts** | Builtins, `alias{...}`, `Union{...}`, `Optional{...}`, `List{...}`, `Tuple{...}`, `Dict{...}`, `Literal{...}`, `Callable` |
+| **Methods** | First rule named `self` enables `object:method{...}` normalization |
+| **Class checks** | Penlight-style class and inheritance shape support |
+| **Diagnostics** | Usage text attached to validation failures |
+| **CI** | Lua 5.1, 5.2, 5.3, 5.4, LuaJIT, busted, LuaRocks lint, StyLua |
+
+---
+
+## Quick Start
+
+```bash
+luarocks install argrule
+```
+
+During local development, use the source tree directly:
+
+```bash
+LUA_PATH="./lua/?.lua;./lua/?/init.lua;;" lua your_script.lua
+```
+
+---
 
 ## Quick Example
 
@@ -21,12 +57,10 @@ local rule = require "argrule.rule"
 local argrule = require "argrule"
 
 local alias = argrule.alias
-local List = argrule.List
 local number = argrule.number
 
 local VectorClass = { __name = "Vector" }
 local Vector = alias { VectorClass }
-local IntList = List { number }
 
 local pick = rule {
   { name = "x", type = Vector, doc = "input vector" },
@@ -36,10 +70,17 @@ local pick = rule {
   return x[index]
 end)
 
-pick { setmetatable({ "a", "b" }, { __index = VectorClass }), index = 2 }
+local vector = setmetatable({ "a", "b" }, { __index = VectorClass })
+
+pick(vector, 2)
+pick { vector, index = 2 }
 ```
 
+---
+
 ## Method Example
+
+If the first rule is named `self`, the wrapper accepts method syntax:
 
 ```lua
 local Account = alias { AccountClass }
@@ -56,6 +97,32 @@ end)
 account:deposit { 100, fee = 2 }
 ```
 
+The call above is normalized like:
+
+```lua
+account.deposit { self = account, amount = 100, fee = 2 }
+```
+
+---
+
+## Project Structure
+
+```
+argrule/
+├── lua/argrule/              # Published Lua modules
+│   ├── init.lua              # Contract constructors and root module
+│   ├── rule.lua              # Rule parser and function wrapper
+│   ├── _state.lua            # Internal metadata state
+│   └── _usage.lua            # Usage text rendering
+├── spec/                     # busted specs
+├── docs/                     # Design notes and feature comparison
+├── .github/workflows/        # GitHub Actions CI
+├── .pre-commit-config.yaml   # StyLua and local verification hooks
+└── argrule-scm-1.rockspec    # LuaRocks package specification
+```
+
+---
+
 ## Development
 
 Use busted as the only Lua test runner. With the local runtimes and rocks installed under `/workspace/local`, run:
@@ -71,4 +138,8 @@ Formatting and local checks are available through pre-commit:
 pre-commit run --all-files
 ```
 
-The current repository is the bootstrap skeleton. The next implementation steps are overload design, Penlight-backed pretty usage rendering, and a large-argument regression fixture.
+---
+
+## License
+
+MIT

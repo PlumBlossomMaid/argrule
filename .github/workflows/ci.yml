@@ -22,12 +22,17 @@ jobs:
         with:
           luaVersion: ${{ matrix.lua-version }}
       - uses: leafo/gh-actions-luarocks@v5
-      - run: luarocks install busted
-      - run: luarocks install penlight
+      - name: Install test dependencies
+        run: |
+          if [ "${{ matrix.lua-version }}" = "luajit" ]; then
+            luarocks --server=https://luarocks.org/dev install busted
+          else
+            luarocks install busted
+          fi
       - run: luarocks lint argrule-scm-1.rockspec
       - run: busted -m './lua/?.lua;./lua/?/init.lua;./spec/?.lua'
       - run: luac -p lua/argrule/*.lua spec/*.lua
-      - run: '! grep -RniE "paddle|insight|torch" lua spec README.md docs argrule-scm-1.rockspec'
+      - run: '! grep -RniE "paddle|insight|torch" lua spec README*.md docs argrule-scm-1.rockspec'
 
   style:
     runs-on: ubuntu-latest

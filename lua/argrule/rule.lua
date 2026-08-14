@@ -1,6 +1,8 @@
 local argrule = require "argrule"
 local state = require "argrule._state"
 
+local table_unpack = table.unpack or unpack
+
 local M = {}
 
 local function clone_rule(raw, index)
@@ -282,7 +284,7 @@ local function invoke(fn, meta, ...)
   if not args then
     return bad(meta, err)
   end
-  return fn(unpack(args, 1, #meta.rules))
+  return fn(table_unpack(args, 1, #meta.rules))
 end
 
 function M.make()
