@@ -40,7 +40,16 @@ jobs:
           fi
       - run: luarocks lint argrule-scm-1.rockspec
       - run: busted -m './lua/?.lua;./lua/?/init.lua;./spec/?.lua'
-      - run: luac -p lua/argrule/*.lua spec/*.lua
+      - name: Lua syntax check
+        run: |
+          if command -v luac >/dev/null 2>&1; then
+            luac -p lua/argrule/*.lua spec/*.lua
+          else
+            lua_bin=$(command -v lua || command -v luajit)
+            for file in lua/argrule/*.lua spec/*.lua; do
+              LUA_SYNTAX_FILE="$file" "$lua_bin" -e 'local f, err = loadfile(os.getenv("LUA_SYNTAX_FILE")); if not f then error(err) end'
+            done
+          fi
       - run: '! grep -RniE "paddle|insight|torch" lua spec README*.md docs argrule-scm-1.rockspec'
 
   style:
