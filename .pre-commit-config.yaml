@@ -1,0 +1,38 @@
+repos:
+  - repo: https://github.com/JohnnyMorganz/StyLua
+    rev: v2.5.2
+    hooks:
+      - id: stylua
+        args: [--check, .]
+  - repo: local
+    hooks:
+      - id: busted-lua51
+        name: busted lua5.1
+        entry: bash -c 'LUA_PATH="./lua/?.lua;./lua/?/init.lua;./spec/?.lua;;" /workspace/local/luarocks51/bin/busted'
+        language: system
+        files: ^(lua|spec)/.*\.lua$
+        pass_filenames: false
+      - id: busted-luajit
+        name: busted luajit
+        entry: bash -c 'LUA_PATH="./lua/?.lua;./lua/?/init.lua;./spec/?.lua;;" /workspace/local/luarocksjit/bin/busted'
+        language: system
+        files: ^(lua|spec)/.*\.lua$
+        pass_filenames: false
+      - id: luarocks-lint
+        name: luarocks lint
+        entry: /workspace/local/luarocks51/bin/luarocks lint argrule-scm-1.rockspec
+        language: system
+        files: ^argrule-scm-1\.rockspec$
+        pass_filenames: false
+      - id: luac-syntax
+        name: luac syntax
+        entry: bash -c '/workspace/local/bin/luac5.1 -p lua/argrule/*.lua spec/*.lua'
+        language: system
+        files: ^(lua|spec)/.*\.lua$
+        pass_filenames: false
+      - id: framework-hardcode-guard
+        name: framework hardcode guard
+        entry: bash -c '! grep -RniE "paddle|insight|torch" lua spec README.md docs argrule-scm-1.rockspec'
+        language: system
+        files: ^(lua|spec|docs)/|README\.md$|argrule-scm-1\.rockspec$
+        pass_filenames: false

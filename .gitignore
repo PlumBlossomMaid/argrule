@@ -1,0 +1,6 @@
+*.rock
+*.src.rock
+*.zip
+*.tar.gz
+.luarocks/
+luacov.*
