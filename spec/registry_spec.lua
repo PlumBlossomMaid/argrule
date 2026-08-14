@@ -1,5 +1,6 @@
 local helper = require "spec_helper"
 local argrule = require "argrule"
+local class = require "pl.class"
 
 local alias = argrule.alias
 local Union = argrule.Union
@@ -64,16 +65,10 @@ describe("argrule contracts", function()
   end)
 
   it("supports Penlight-style class inheritance", function()
-    local Base = { __name = "Base" }
-    Base.__index = Base
-    Base._class = Base
-
-    local Child = { __name = "Child", _base = Base }
-    Child.__index = Child
-    Child._class = Child
-
+    local Base = class()
+    local Child = class(Base)
     local BaseType = alias { Base }
-    local child = setmetatable({ _class = Child }, Child)
+    local child = Child()
 
     assert.is_truthy(BaseType(child))
   end)

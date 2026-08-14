@@ -38,8 +38,12 @@ Lua API 經常需要同時支援緊湊的位置參數、可讀的命名參數、
 
 ## 快速開始
 
+`argrule` 還沒有發布到 LuaRocks。現在請從倉庫 checkout 安裝：
+
 ```bash
-luarocks install argrule
+git clone https://github.com/PlumBlossomMaid/argrule.git
+cd argrule
+luarocks make argrule-scm-1.rockspec
 ```
 
 本地開發時，可以直接使用原始碼樹：
@@ -55,22 +59,32 @@ LUA_PATH="./lua/?.lua;./lua/?/init.lua;;" lua your_script.lua
 ```lua
 local rule = require "argrule.rule"
 local argrule = require "argrule"
+local class = require "pl.class"
 
 local alias = argrule.alias
 local number = argrule.number
 
-local VectorClass = { __name = "Vector" }
-local Vector = alias { VectorClass }
+local Vector = class()
+
+function Vector:_init(values)
+  self.values = values
+end
+
+function Vector:pick(index)
+  return self.values[index]
+end
+
+local VectorContract = alias { Vector }
 
 local pick = rule {
-  { name = "x", type = Vector, doc = "input vector" },
+  { name = "x", type = VectorContract, doc = "input vector" },
   { name = "index", type = number, default = 1, doc = "1-based index" },
   doc = "Pick a value from a vector-like object.",
 }(function(x, index)
-  return x[index]
+  return x:pick(index)
 end)
 
-local vector = setmetatable({ "a", "b" }, { __index = VectorClass })
+local vector = Vector { "a", "b" }
 
 pick(vector, 2)
 pick { vector, index = 2 }
@@ -83,10 +97,15 @@ pick { vector, index = 2 }
 如果首個 rule 名為 `self`，包裝後的函式會接受類別方法語法：
 
 ```lua
-local Account = alias { AccountClass }
+local Account = class()
+local AccountContract = alias { Account }
 
-AccountClass.deposit = rule {
-  { name = "self", type = Account },
+function Account:_init(balance)
+  self.balance = balance
+end
+
+Account.deposit = rule {
+  { name = "self", type = AccountContract },
   { name = "amount", type = number },
   { name = "fee", type = number, default = 0 },
 }(function(self, amount, fee)
@@ -94,6 +113,7 @@ AccountClass.deposit = rule {
   return self.balance
 end)
 
+local account = Account(10)
 account:deposit { 100, fee = 2 }
 ```
 

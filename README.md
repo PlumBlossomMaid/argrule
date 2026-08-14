@@ -38,8 +38,12 @@ Lua APIs often need to support compact positional calls, readable named calls, d
 
 ## Quick Start
 
+`argrule` is not published to LuaRocks yet. Install it from a checkout:
+
 ```bash
-luarocks install argrule
+git clone https://github.com/PlumBlossomMaid/argrule.git
+cd argrule
+luarocks make argrule-scm-1.rockspec
 ```
 
 During local development, use the source tree directly:
@@ -55,22 +59,32 @@ LUA_PATH="./lua/?.lua;./lua/?/init.lua;;" lua your_script.lua
 ```lua
 local rule = require "argrule.rule"
 local argrule = require "argrule"
+local class = require "pl.class"
 
 local alias = argrule.alias
 local number = argrule.number
 
-local VectorClass = { __name = "Vector" }
-local Vector = alias { VectorClass }
+local Vector = class()
+
+function Vector:_init(values)
+  self.values = values
+end
+
+function Vector:pick(index)
+  return self.values[index]
+end
+
+local VectorContract = alias { Vector }
 
 local pick = rule {
-  { name = "x", type = Vector, doc = "input vector" },
+  { name = "x", type = VectorContract, doc = "input vector" },
   { name = "index", type = number, default = 1, doc = "1-based index" },
   doc = "Pick a value from a vector-like object.",
 }(function(x, index)
-  return x[index]
+  return x:pick(index)
 end)
 
-local vector = setmetatable({ "a", "b" }, { __index = VectorClass })
+local vector = Vector { "a", "b" }
 
 pick(vector, 2)
 pick { vector, index = 2 }
@@ -83,10 +97,15 @@ pick { vector, index = 2 }
 If the first rule is named `self`, the wrapper accepts method syntax:
 
 ```lua
-local Account = alias { AccountClass }
+local Account = class()
+local AccountContract = alias { Account }
 
-AccountClass.deposit = rule {
-  { name = "self", type = Account },
+function Account:_init(balance)
+  self.balance = balance
+end
+
+Account.deposit = rule {
+  { name = "self", type = AccountContract },
   { name = "amount", type = number },
   { name = "fee", type = number, default = 0 },
 }(function(self, amount, fee)
@@ -94,6 +113,7 @@ AccountClass.deposit = rule {
   return self.balance
 end)
 
+local account = Account(10)
 account:deposit { 100, fee = 2 }
 ```
 

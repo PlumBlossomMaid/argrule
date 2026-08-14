@@ -32,7 +32,7 @@ repos:
         pass_filenames: false
       - id: framework-hardcode-guard
         name: framework hardcode guard
-        entry: bash -c '! grep -RniE "paddle|insight|torch" lua spec README*.md docs argrule-scm-1.rockspec'
+        entry: bash -c '! grep -RniE "paddle|insight|torch" lua spec README*.md docs QWEN.md argrule-scm-1.rockspec'
         language: system
-        files: ^(lua|spec|docs)/|README.*\.md$|argrule-scm-1\.rockspec$
+        files: ^(lua|spec|docs)/|README.*\.md$|QWEN\.md$|argrule-scm-1\.rockspec$
         pass_filenames: false

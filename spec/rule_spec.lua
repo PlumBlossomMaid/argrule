@@ -1,6 +1,7 @@
 local helper = require "spec_helper"
 local rule = require "argrule.rule"
 local argrule = require "argrule"
+local class = require "pl.class"
 
 local alias = argrule.alias
 local Union = argrule.Union
@@ -10,8 +11,8 @@ local Literal = argrule.Literal
 local number = argrule.number
 local str = argrule.string
 
-local VectorClass = { __name = "Vector" }
-local Vector = alias { VectorClass }
+local Vector = class()
+local VectorContract = alias { Vector }
 local Int = alias {
   function(o)
     return type(o) == "number" and math.floor(o) == o
@@ -21,8 +22,16 @@ local IntList = List { Int }
 local MaybeString = Optional { str }
 local Mode = Literal { "train", "eval" }
 
+function Vector:_init(...)
+  self.values = { ... }
+end
+
+function Vector:pick(index)
+  return self.values[index]
+end
+
 local function vector(...)
-  return setmetatable({ ... }, { __index = VectorClass })
+  return Vector(...)
 end
 
 describe("argrule.rule", function()
@@ -48,10 +57,10 @@ describe("argrule.rule", function()
 
   it("supports local alias contracts and rejects trailing options tables", function()
     local pick = rule {
-      { name = "x", type = Vector },
+      { name = "x", type = VectorContract },
       { name = "index", type = number, default = 1 },
     }(function(x, index)
-      return x[index]
+      return x:pick(index)
     end)
 
     assert.are.equal("b", pick { vector("a", "b"), index = 2 })
@@ -166,18 +175,23 @@ describe("argrule.rule", function()
   end)
 
   it("treats first self rule as method syntax", function()
-    local AccountClass = { __name = "Account" }
-    local Account = alias { AccountClass }
+    local Account = class()
+    local AccountContract = alias { Account }
 
-    local account = setmetatable({ balance = 10 }, { __index = AccountClass })
-    AccountClass.deposit = rule {
-      { name = "self", type = Account },
+    function Account:_init(balance)
+      self.balance = balance
+    end
+
+    Account.deposit = rule {
+      { name = "self", type = AccountContract },
       { name = "amount", type = number },
       { name = "fee", type = number, default = 0 },
     }(function(self, amount, fee)
       self.balance = self.balance + amount - fee
       return self.balance
     end)
+
+    local account = Account(10)
 
     assert.are.equal(14, account:deposit { 5, fee = 1 })
     assert.are.equal(20, account:deposit(6))

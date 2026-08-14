@@ -50,7 +50,7 @@ jobs:
               LUA_SYNTAX_FILE="$file" "$lua_bin" -e 'local f, err = loadfile(os.getenv("LUA_SYNTAX_FILE")); if not f then error(err) end'
             done
           fi
-      - run: '! grep -RniE "paddle|insight|torch" lua spec README*.md docs argrule-scm-1.rockspec'
+      - run: '! grep -RniE "paddle|insight|torch" lua spec README*.md docs QWEN.md argrule-scm-1.rockspec'
 
   style:
     runs-on: ubuntu-latest
