@@ -4,3 +4,5 @@
 *.tar.gz
 .luarocks/
 luacov.*
+
+.ipynb_checkpoints/
